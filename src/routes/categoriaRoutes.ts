@@ -58,7 +58,7 @@ router.get('/', async (req: Request, res: Response) => {
  *               items:
  *                 $ref: '#/components/schemas/Categoria'
  */
-router.get('/:id/filhas', async (req: Request, res: Response) => {
+router.get('/:id/subcategorias', async (req: Request, res: Response) => {
   await listarSubcategorias(req, res);
 });
 
