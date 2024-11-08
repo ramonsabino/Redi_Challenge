@@ -1,0 +1,34 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # Ou a branch que você deseja monitorar, por exemplo 'master'
+  pull_request:
+    branches:
+      - main  # Ou a branch que você deseja monitorar
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # Usamos o Ubuntu como ambiente para rodar os testes
+
+    steps:
+      # Checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Configuração do Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'  # Defina a versão do Node.js que está usando
+
+      # Instalar dependências
+      - name: Install dependencies
+        run: |
+          npm install
+
+      # Rodar os testes
+      - name: Run tests
+        run: |
+          npm run test -- --coverage  # Aqui você pode rodar o comando que você usa para testar
