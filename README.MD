@@ -47,8 +47,8 @@ Esta é uma API RESTful construída para o gerenciamento de categorias e subcate
 1. Clone o repositório:
 
    ```bash
-   git clone https://github.com/username/projeto-categorias.git
-   cd projeto-categorias
+   git clone https://github.com/ramonsabino/Redi_Challenge.git
+   cd Redi_Challenge
    ```
 
 2. Instale as dependências:
