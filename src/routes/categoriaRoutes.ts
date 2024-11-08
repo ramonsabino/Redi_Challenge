@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { atualizarCategoria, criarCategoria, deletarCategoria, listarCategorias } from '../controllers/categoriaController';
+import { atualizarCategoria, criarCategoria, deletarCategoria, listarCategorias, listarSubcategorias } from '../controllers/categoriaController';
 
 const router = Router();
 
@@ -41,6 +41,25 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.get('/', async (req: Request, res: Response) => {
   await listarCategorias(req, res);
+});
+
+/**
+ * @swagger
+ * /categorias:
+ *   get:
+ *     summary: Retorna uma lista de categorias com base no ID
+ *     responses:
+ *       200:
+ *         description: Lista de categorias filhas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Categoria'
+ */
+router.get('/:id/filhas', async (req: Request, res: Response) => {
+  await listarSubcategorias(req, res);
 });
 
 /**
