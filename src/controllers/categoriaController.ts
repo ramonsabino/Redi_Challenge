@@ -1,16 +1,7 @@
 import { Request, Response } from 'express';
 import { Categoria } from '../models/Categoria';
+import { CategoriaService } from '../services/CategoriaService';
 
-// Função recursiva para calcular a profundidade
-const calcularProfundidade = async (categoriaId: string, profundidade: number = 0): Promise<number> => {
-  const categoria = await Categoria.findById(categoriaId);
-  if (!categoria || !categoria.pai) {
-    return profundidade;
-  }
-  return calcularProfundidade(categoria.pai.toString(), profundidade + 1); 
-};
-
-// Criar uma categoria
 export const criarCategoria = async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const { nome, ativo, pai } = req.body;
@@ -26,25 +17,23 @@ export const criarCategoria = async (req: Request, res: Response): Promise<Respo
       }
 
       // Verificando se há mais de 5 niveis de profundidade
-      const profundidade = await calcularProfundidade(pai.toString());
+      const profundidade = await CategoriaService.calcularProfundidade(pai.toString());
       if (profundidade >= 5) {
         return res.status(400).json({ message: 'Não é permitido criar categorias além do 5º nível de profundidade.' });
       }
 
       // Limitando categoria pai até 20 filhas
-      if (categoriaPai.filhas.length >= 20) {
+      if (CategoriaService.validarLimiteFilhas(categoriaPai)) {
         return res.status(400).json({ message: 'O limite de 20 subcategorias foi atingido para esta categoria pai.' });
       }
 
       // Validando se há nome duplicado
-      const categoriaDuplicada = await Categoria.findOne({ nome, pai });
-      if (categoriaDuplicada) {
+      if (await CategoriaService.validarNomeDuplicado(nome, pai)) {
         return res.status(400).json({ message: 'Já existe uma subcategoria com este nome para esta categoria pai.' });
       }
     }
 
-    const novaCategoria = new Categoria({ nome, ativo, pai });
-    const categoriaCriada = await novaCategoria.save();
+    const categoriaCriada = await CategoriaService.criarCategoria(nome, ativo, pai);
 
     // Atualizando a categoria Pai com a nova filha
     if (pai) {
@@ -54,38 +43,32 @@ export const criarCategoria = async (req: Request, res: Response): Promise<Respo
     res.status(201).json(categoriaCriada);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      res.status(500).json({ message: 'Erro ao Criar categorias', error: error.message });
+      res.status(500).json({ message: 'Erro ao Criar categoria', error: error.message });
     } else {
-      res.status(500).json({ message: 'Erro ao Criar categorias', error: 'Erro desconhecido' });
+      res.status(500).json({ message: 'Erro ao Criar categoria', error: 'Erro desconhecido' });
     }
   }
 };
 
-// Listar todas as categorias com filtros e paginação
 export const listarCategorias = async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    // Pegando os parâmetros de consulta para paginação e filtros
     const { page = 1, size = 10 } = req.query;
     const sort = typeof req.query.sort === 'string' ? req.query.sort : 'nome';
 
     const skip = (Number(page) - 1) * Number(size);
     const limit = Number(size);
 
-    // Filtro de busca
     const filtro: any = {};
 
-    // Filtro para categorias ativas
     if (req.query.ativo) {
       filtro.ativo = req.query.ativo === 'true'; 
     }
 
-    // Pegando as categorias com base no filtro, limitando e ordenando
     const categorias = await Categoria.find(filtro)
       .skip(skip)
       .limit(limit)
-      .sort({ [sort]: 1 }); 
+      .sort({ [sort]: 1 });
 
-    // Contagem do total de categorias sem filtro
     const totalCategorias = await Categoria.countDocuments(filtro);
 
     res.json({
@@ -110,7 +93,6 @@ export const listarSubcategorias = async (req: Request, res: Response): Promise<
       return res.status(404).json({ message: 'Categoria pai não encontrada' });
     }
 
-    // Listar as subcategorias (filhas)
     const subcategorias = await Categoria.find({ _id: { $in: categoria.filhas } });
 
     res.json(subcategorias);
@@ -119,8 +101,6 @@ export const listarSubcategorias = async (req: Request, res: Response): Promise<
   }
 };
 
-
-// Atualizar uma categoria
 export const atualizarCategoria = async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
@@ -142,20 +122,6 @@ export const atualizarCategoria = async (req: Request, res: Response): Promise<R
   }
 };
 
-// Função para deletar categoria Pai junto com as filhass
-const deletarCategoriaRecursiva = async (categoriaId: string): Promise<void> => {
-  const categoria = await Categoria.findById(categoriaId);
-
-  if (categoria) {
-    // Deletar todas as filhas
-    for (const filhaId of categoria.filhas) {
-      await deletarCategoriaRecursiva(filhaId.toString());
-    }
-    await Categoria.findByIdAndDelete(categoriaId);
-  }
-};
-
-// Deletar uma categoria
 export const deletarCategoria = async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
@@ -165,7 +131,7 @@ export const deletarCategoria = async (req: Request, res: Response): Promise<Res
       return res.status(404).json({ message: 'Categoria não encontrada' });
     }
 
-    await deletarCategoriaRecursiva(id);
+    await CategoriaService.deletarCategoria(id);
 
     res.json({ message: 'Categoria e suas subcategorias foram deletadas com sucesso' });
   } catch (error) {
