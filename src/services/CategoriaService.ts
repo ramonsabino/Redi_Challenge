@@ -9,13 +9,13 @@ const calcularProfundidade = async (categoriaId: string, profundidade: number = 
   return calcularProfundidade(categoria.pai.toString(), profundidade + 1); 
 };
 
-// Função para validar nome duplicado
+// Função para validar nomes duplicados
 const validarNomeDuplicado = async (nome: string, pai: string): Promise<boolean> => {
   const categoriaDuplicada = await Categoria.findOne({ nome, pai });
   return categoriaDuplicada ? true : false;
 };
 
-// Função para verificar limite de filhas
+// Função para verificar limite de subcategorias(filhas)
 const validarLimiteFilhas = (categoriaPai: any): boolean => {
   return categoriaPai.filhas.length >= 20;
 };
